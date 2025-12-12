@@ -8,22 +8,20 @@ import * as Yup from 'yup';
 // Sweden, Norway, Denmark, Finland, Poland, Russia, Turkey, Israel, Singapore, Malaysia,
 // Thailand, Philippines, Indonesia, Vietnam, and many more
 // Order: Most specific patterns first (with hyphens/spaces), then general numeric patterns
-const globalPostalCodeRegex = /^(\d{5}-\d{4}|\d{5}-\d{3}|\d{3}-\d{4}|\d{2}-\d{3}|\d{4} [A-Z]{2}|\d{3} \d{2}|[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d|[A-Z]{1,2}[0-9R][0-9A-Z]? ?[0-9][A-Z]{2}|[A-Z]\d{4}[A-Z]{3}|\d{7}|\d{6}|\d{5}|\d{4})$/i;
 
 const ValidationSchema = Yup.object().shape({
   zipCode: Yup.string()
-  .required('Postal/Zip Code is required')
-  .matches(
-    globalPostalCodeRegex,
-    'Invalid format. Please enter a valid postal code from any country (e.g., 12345, A1A 1A1, SW1A 0AA, 110001, 1234 AB, 123-4567).'
+  .test(
+    "no-leading-trailing-spaces",
+    "Leading or trailing spaces are not allowed",
+    (value) => {
+      if (!value) return true;
+      return value === value.trim();
+    }
   )
-  .min(3, 'Code is too short') // Minimum length for basic protection
-  .max(15, 'Code is too long'),
-  
-  name: Yup.string()
-    .required('Name is required')
-    .min(2, 'Too Short!')
-    .max(50, 'Too Long!'),
+  .matches(/^[A-Za-z0-9 ]+$/, "Only letters, numbers, and spaces are allowed")
+  .max(10, "Zip code should not be more than 10 characters"),
+
 });
 
 
@@ -34,9 +32,15 @@ const PostalCodeForm = () => {
     zipCode: '',
   };
 
-  const handleSubmit = (values, { setSubmitting }) => {
-    console.log('Form Submitted!', values);
-    alert(`Success! Data: ${JSON.stringify(values, null, 2)}`);
+  const handleSubmit = async (values, { setSubmitting }) => {
+    // IMPORTANT: Apply Yup validation (transforms + rules) before using values
+    const cleaned = await ValidationSchema.validate(values, {
+      abortEarly: false,
+    });
+
+    console.log("Form Submitted!", cleaned);
+    alert(`Success! Data: ${JSON.stringify(cleaned, null, 2)}`);
+
     setSubmitting(false);
   };
 
